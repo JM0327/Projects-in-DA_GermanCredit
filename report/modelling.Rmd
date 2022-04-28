@@ -1,0 +1,83 @@
+# 4. Modelling  
+
+```{r, echo = FALSE, message = FALSE}
+source(here::here("scripts/setup.R"))
+```
+## 4.1 CART  
+
+```{r}
+set.seed(1234)
+Credit.tree <- rpart(RESPONSE ~ ., data=Credit.tr.res[-1])
+rpart.plot(Credit.tree)
+```
+
+```{r}
+plotcp(Credit.tree)
+```
+
+```{r}
+pred <- predict(Credit.tree,newdata = Credit.te,type = "class")
+table(Pred=pred,obs=Credit.te$RESPONSE)
+```
+
+## Clustering  
+
+```{r}
+credit.d <- dist(Credit.copy[,-32], method = "manhattan")
+
+# credit.d.melt <- melt(as.matrix(credit.d)) 
+# head(credit.d.melt)
+# 
+# ggplot(data = credit.d.melt, aes(x=Var1, y=Var2, fill=value)) + 
+#   geom_tile()
+
+credit.hc <- hclust(credit.d, method = "complete")
+plot(credit.hc, hang=-1)
+
+plot(credit.hc, hang=-1)
+rect.hclust(credit.hc, k=6)
+# credit.clust <- cutree(credit.hc, k=6)
+# credit.clust
+```
+
+```{r}
+# Choice of the number of clusters
+# fviz_nbclust(data[,-32],
+#              hcut, hc_method="complete",
+#              hc_metric="manhattan",
+#              method = "wss", 
+#              k.max = 25, verbose = FALSE)
+# fviz_nbclust(data[,-32],
+#              hcut, hc_method="complete",
+#              hc_metric="manhattan",
+#              method = "silhouette", 
+#              k.max = 25, verbose = FALSE)
+# fviz_nbclust(data[,-32],
+#              hcut, hc_method="complete",
+#              hc_metric="manhattan",
+#              method = "gap", 
+#              k.max = 25, verbose = FALSE)
+```
+
+```{r}
+#K-means
+# 
+# fviz_nbclust(data[,-32],
+#              kmeans,
+#              method = "wss", 
+#              k.max = 25, verbose = FALSE)
+# fviz_nbclust(data[,-32],
+#              kmeans, 
+#              method = "silhouette", 
+#              k.max = 25, verbose = FALSE)
+# fviz_nbclust(data[,-32],
+#              kmeans,
+#              method = "gap", 
+#              k.max = 25, verbose = FALSE)
+
+# credit.km <- kmeans(data[,-32], centers=2)
+# credit.km$cluster
+
+#PAM method
+
+```

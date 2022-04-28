@@ -5,9 +5,10 @@
 # load the required packages
 packages <- c(
   "here", # for the project's organization
-  "tidyverse", "lubridate", "DT", "DataExplorer", "GGally", 
-  "corrplot", "reshape2", "factoextra", # for wrangling
-  "ggrepel", "gghighlight", "patchwork", "scales","fpp3", # for plotting
+  "tidyverse", "lubridate", "DT", "DataExplorer", "GGally", "summarytools",
+  "corrplot", "reshape2", "factoextra", "summarytools",# for wrangling
+  "ggrepel", "gghighlight", "patchwork", "scales","rpart","rpart.plot",
+  "caret",# for plotting
   "knitr", "kableExtra", "bookdown", "rmarkdown" # for the report
   )
 purrr::walk(packages, library, character.only = TRUE)
@@ -35,12 +36,13 @@ opts_chunk$set(
   # cache = TRUE,
   fig.retina = 0.8, # figures are either vectors or 300 dpi diagrams
   dpi = 300,
-  out.width = "70%",
+  out.width = "80%",
   fig.align = "center",
-  fig.width = 12,
+  fig.width = 10,
   fig.asp = 0.618,
   fig.show = "hold",
   message = FALSE,
-  echo = FALSE
+  echo = FALSE,
+  warning = FALSE
 )
 
