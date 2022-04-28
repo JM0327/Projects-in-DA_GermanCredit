@@ -1,0 +1,9 @@
+# Introduction
+
+```{r, echo = FALSE, message = FALSE}
+source(here::here("scripts/setup.R"))
+```
+
+“The German Credit data has data on 1000 past credit applicants, described by 30 variables. Each applicant is rated as "Good" or "Bad" credit (encoded as 1 and 0 respectively in the response variable). We want to obtain a model that may be used to determine if new applicants present a good or bad credit risk.”   
+
+In this case, we are planning to use both CART model and Clustering to do the analysis.

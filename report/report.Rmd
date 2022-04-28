@@ -1,0 +1,9 @@
+---
+title: "Analysis for German Credit"
+author: "Jiaming Huang, Ting Yang"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output: html_document
+---
+
+```{r child = c('intro.Rmd', 'data.Rmd', 'eda.Rmd', 'analysis.Rmd', 'concl.Rmd')}
+```

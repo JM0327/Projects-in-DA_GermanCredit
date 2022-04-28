@@ -1,0 +1,90 @@
+# Exploratory data analysis
+
+```{r, echo = FALSE, message = FALSE}
+source(here::here("scripts/setup.R"))
+```
+
+```{r, fig.align='center', fig.width=12, fig.height=8}
+data[2:31] %>% 
+  plot_density(
+  ggtheme = theme_bw())
+```
+
+```{r, fig.align='center', fig.width=12, fig.height=8}
+data[2:32] %>% 
+  plot_boxplot(by='RESPONSE', ncol = 5)
+```
+
+0/1 categorical data？？binary values cannot be shown in chart. 
+
+
+```{r, fig.align='center', fig.width=15, fig.height=15,}
+# corrplot(cor(data[2:31]), 
+#          method = "color",
+#          addCoef.col="black",
+#          number.digits = 2,number.cex = 0.7,
+#          tl.cex=1, tl.col="black")
+```
+
+## 3.2 Clustering
+
+```{r}
+credit.d <- dist(data[,-32], method = "manhattan")
+
+# credit.d.melt <- melt(as.matrix(credit.d)) 
+# head(credit.d.melt)
+# 
+# ggplot(data = credit.d.melt, aes(x=Var1, y=Var2, fill=value)) + 
+#   geom_tile()
+
+credit.hc <- hclust(credit.d, method = "complete")
+plot(credit.hc, hang=-1)
+
+plot(credit.hc, hang=-1)
+rect.hclust(credit.hc, k=6)
+# credit.clust <- cutree(credit.hc, k=6)
+# credit.clust
+```
+
+```{r}
+# Choice of the number of clusters
+# fviz_nbclust(data[,-32],
+#              hcut, hc_method="complete",
+#              hc_metric="manhattan",
+#              method = "wss", 
+#              k.max = 25, verbose = FALSE)
+# fviz_nbclust(data[,-32],
+#              hcut, hc_method="complete",
+#              hc_metric="manhattan",
+#              method = "silhouette", 
+#              k.max = 25, verbose = FALSE)
+# fviz_nbclust(data[,-32],
+#              hcut, hc_method="complete",
+#              hc_metric="manhattan",
+#              method = "gap", 
+#              k.max = 25, verbose = FALSE)
+```
+
+```{r}
+#K-means
+# 
+# fviz_nbclust(data[,-32],
+#              kmeans,
+#              method = "wss", 
+#              k.max = 25, verbose = FALSE)
+# fviz_nbclust(data[,-32],
+#              kmeans, 
+#              method = "silhouette", 
+#              k.max = 25, verbose = FALSE)
+# fviz_nbclust(data[,-32],
+#              kmeans,
+#              method = "gap", 
+#              k.max = 25, verbose = FALSE)
+
+# credit.km <- kmeans(data[,-32], centers=2)
+# credit.km$cluster
+
+#PAM method
+
+```
+
