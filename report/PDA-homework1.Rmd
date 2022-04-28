@@ -1,0 +1,164 @@
+---
+title: "PDA-homework1"
+output: html_document
+---
+
+#1 EDA:data understanding
+```{r}
+library(ggplot2)
+library(GGally)
+library(caret)
+library(tidyverse)
+library(rpart)
+library(rpart.plot)
+```
+
+
+##1.1 Data structure and summary
+```{r}
+Credit <- read.csv(here::here("data/GermanCredit.csv"), sep=";", header=T)
+
+Credit_factor <- Credit %>% select(-1,-3,-11,-14,-23,-27,-29) %>% colnames()
+for(i in Credit_factor){
+    Credit[,i] <- as.factor(Credit[,i])
+} #shall we change all the variables which are not numerical into factor? 
+head(Credit)
+```
+
+
+```{r}
+str(Credit)
+summary(Credit)
+```
+
+```{r}
+library(summarytools)
+dfSummary(Credit, style="grid")
+
+view(dfSummary(Credit, style="grid",plain.ascii = FALSE, tmp.img.dir = "/tmp"))
+```
+
+##1.2 Graphs for each variable
+
+###1.2.1 graph for response
+```{r}
+p1 <- Credit %>% ggplot(mapping = aes(x=RESPONSE,fill=RESPONSE))+geom_bar()
+p1
+```
+
+###1.2.2 graphs for all numeric variables
+```{r}
+#histogram/bar
+Credit %>% select(-OBS.) %>% 
+  keep(is.numeric) %>% 
+  gather() %>% 
+  ggplot(aes(value)) +
+  facet_wrap(~ key, scales = "free") +
+  geom_histogram()
+```
+
+
+###1.2.3 graphs for the purpose of credit variables
+
+```{r}
+a <- unlist(Credit$NEW_CAR) 
+NEW_CAR <- sum(a=="1")
+b <- unlist(Credit$USED_CAR) 
+USED_CAR <- sum(b=="1")
+c <- unlist(Credit$FURNITURE) 
+FURNITURE <- sum(c=="1")
+d <- unlist(Credit$RADIO.TV) 
+RADIO.TV <- sum(d=="1")
+e <- unlist(Credit$EDUCATION)
+EDUCATION <- sum(e=="1")
+f <- unlist(Credit$RETRAINING)
+RETRAINING <- sum(f=="1")
+OTHERS <- 1000-(NEW_CAR+USED_CAR+FURNITURE+RADIO.TV+EDUCATION+RETRAINING)
+
+reason <- c("NEW_CAR","USED_CAR","FURNITURE","RADIO.TV","EDUCATION","RETRAINING","OTHERS")
+number <- c(NEW_CAR,USED_CAR,FURNITURE,RADIO.TV,EDUCATION,RETRAINING,OTHERS)
+REASON_DATA <- data.frame(reason,number)
+
+p2 <- ggplot(REASON_DATA,aes(x=reorder(reason,number),y=number,fill=reason))+geom_col()+
+  geom_text(aes(label = number), vjust = 1.5, colour = "white", position = position_dodge(.9), size = 5)
+p2
+```
+
+###1.2.4 graphs for other categorical variables
+```{r}
+Credit %>% select(-5,-6,-7,-8,-9,-10) %>% 
+  keep(is.factor) %>% 
+  gather() %>% 
+  ggplot(aes(x=value)) +
+  facet_wrap(~ key, scales = "free") +
+  geom_bar()
+```
+###1.2.4 the relation between each variable and response
+
+```{r}
+
+```
+
+
+###1.2.5 correlation plot
+```{r}
+
+```
+
+
+#2 data preparation
+
+##2.1 balancing data
+
+```{r}
+set.seed(416)
+index.tr <- createDataPartition(y=Credit$RESPONSE,p=0.8,list=FALSE)
+Credit.tr <- Credit[index.tr,]
+Credit.te <- Credit[-index.tr,]
+```
+
+
+```{r}
+table(Credit.tr$RESPONSE)
+```
+
+```{r}
+No.good <- max(table(Credit.tr$RESPONSE))
+Credit.tr.bad <- filter(Credit.tr, RESPONSE=="0")
+Credit.tr.good <- filter(Credit.tr, RESPONSE=="1")
+
+index.bad <- sample(size=No.good, x=1:nrow(Credit.tr.bad), replace=TRUE)
+Credit.tr.res <- data.frame(rbind(Credit.tr.good, Credit.tr.bad[index.bad,]))
+table(Credit.tr.res$RESPONSE)
+```
+
+##2.2 cross validation
+```{r}
+trctrl <- trainControl(method = "cv",number = 10)
+Credit.cv <- train(RESPONSE ~., data = credit.tr.res, method = "rpart",
+                    trControl=trctrl)
+Credit.cv
+```
+
+```{r}
+Credit.pred <- predict(Credit.cv,newdata=Credit.te)
+confusionMatrix(data=Credit.pred, reference = Credit.te$RESPONSE)
+```
+
+
+#3 modeling
+```{r}
+set.seed(1234)
+Credit.tree <- rpart(RESPONSE ~ ., data=credit.tr.res[-1])
+rpart.plot(Credit.tree)
+```
+
+```{r}
+plotcp(Credit.tree)
+```
+
+```{r}
+pred <- predict(Credit.tree,newdata = Credit.te,type = "class")
+table(Pred=pred,obs=Credit.te$RESPONSE)
+```
+
