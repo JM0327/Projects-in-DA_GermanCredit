@@ -5,24 +5,24 @@ source(here::here("scripts/setup.R"))
 ```
 
 ## 2.1 Data structure and summary  
+
+### 2.1.1 Prepare the data
 ```{r}
 Credit <- read.csv(here::here("data/GermanCredit.csv"), sep=";", header=T)
-Credit.copy <- Credit #one for plot, one for calculation
+# Credit.copy <- Credit #one for plot, one for calculation
 
-Credit_factor <- Credit %>% select(-1,-3,-11,-14,-23,-27,-29) %>% colnames()
+Credit_factor <- Credit %>% select(-3,-11,-14,-23,-27,-29) %>% colnames()
 for(i in Credit_factor){
     Credit[,i] <- as.factor(Credit[,i])
-} #shall we change all the variables which are not numerical into factor? 
+} 
 
 Credit %>% datatable(rownames = FALSE,
                      option = list(scrollX = T,
                                    pageLength = 5))
 
 ```
-<font color=red>
-Q: Shall we change all the variables which are not numerical into factor? 
-</font>
-   
+
+###2.1.2 Structure of data
 ```{r}
 str(Credit)
 summary(Credit)
@@ -37,9 +37,45 @@ print(dfSummary(Credit,style="grid",
       method = "render")
 ```
 
+###2.1.3 Mistakes found in the data
+After checking the structure, we find some mistakes about the data and we correct these data.
+1.Education:according to the data description, this variable is a binary type. 0 means the applicant has no education and 1 means the applicant has education. But we notice this variable has three categories. We need to change the category -1 to 1.
+```{r}
+table(Credit$EDUCATION)
+Credit <- Credit %>% 
+  mutate(EDUCATION=ifelse(EDUCATION %in% c("-1","1") , "1", "0"))
+table(Credit$EDUCATION)
+```
+2.Guarantor:according to the data description, this variable is a binary type. 0 means the applicant has no guarantor and 1 means the applicant has guarantor. But we notice this variable has three categories. We need to change the category 2 to 1.
+```{r}
+table(Credit$GUARANTOR)
+Credit <- Credit %>% 
+  mutate(GUARANTOR=ifelse(GUARANTOR %in% c("2","1") , "1", "0"))
+table(Credit$GUARANTOR)
+```
+3.PRESENT_RESIDENT:according to the data description, this variable has these 4 categories:0, 1, 2, 3. We need to change category 1 to category 0, change category 2 to category 1, change category 3 to category 2 and change category 4 to category 3.
+```{r}
+table(Credit$PRESENT_RESIDENT)
+levels(Credit$PRESENT_RESIDENT)[1] <- 0
+levels(Credit$PRESENT_RESIDENT)[2] <- 1
+levels(Credit$PRESENT_RESIDENT)[3] <- 2
+levels(Credit$PRESENT_RESIDENT)[4] <- 3
+table(Credit$PRESENT_RESIDENT)
+```
+
+4.AGE:the maximum age is 125 which is impossible so we change it to 75. 
+```{r}
+summary(Credit$AGE)
+Credit$AGE[Credit$AGE == 125] <- 75
+summary(Credit$AGE)
+```
+
+
 ## 2.2 Graphs for variables  
 
-### 2.2.1 Graph for response  
+### 2.2.1 Graph for response 
+We find the data set is unbalanced.
+
 ```{r}
 p1 <- Credit %>% ggplot(mapping = aes(x=RESPONSE,fill=RESPONSE))+geom_bar()
 p1
@@ -47,13 +83,29 @@ p1
 
 ### 2.2.2 Graphs for numeric variables  
 ```{r}
-#histogram/bar
-Credit %>% select(-OBS.) %>% 
+#Continuous Variables
+Credit %>% select(-INSTALL_RATE,-NUM_CREDITS,-NUM_DEPENDENTS) %>% 
   keep(is.numeric) %>% 
   gather() %>% 
   ggplot(aes(value)) +
   facet_wrap(~ key, scales = "free") +
   geom_histogram()
+```
+
+
+```{r}
+#Discrete variables
+Credit %>% select(-AGE,-AMOUNT,-DURATION) %>% 
+  keep(is.numeric) %>% 
+  gather() %>% 
+  ggplot(aes(value)) +
+  facet_wrap(~ key, scales = "free") +
+  geom_bar()
+```
+
+
+```{r}
+#mosaic(for numeric variable)
 ```
 
 
@@ -93,6 +145,10 @@ Credit %>% select(-5,-6,-7,-8,-9,-10) %>%
   geom_bar()
 ```
   
+```{r}
+Credit %>% select(12,13,28,32) %>% ggpairs()
+```
+
 ### 2.2.5 Observation profiling       
 In this part, we would like to draw the profilling of observations ditinguished by different response. Thereby, it is possible to observe the performance / situation of observations subjects with good credit in each variable through the portrait.    
 ```{r}
@@ -106,7 +162,7 @@ At the beginning, we want to use boxplot as above, but it is not suitable for bi
 ### 2.2.6 Correlation plot        
 ```{r, out.width= "150%", fig.width=100, fig.height=100}
 
-corrplot(cor(Credit.copy[2:31]), 
+corrplot(cor(Credit.copy[2:32]), 
           method = "color",
           addCoef.col="black",
           number.digits = 2,
@@ -114,46 +170,3 @@ corrplot(cor(Credit.copy[2:31]),
           tl.cex=4, 
           tl.col="black")
 ```
-
-
-# 3 Data preparation  
-
-## 3.1 Balancing data  
-
-```{r}
-set.seed(416)
-index.tr <- createDataPartition(y=Credit$RESPONSE,p=0.8,list=FALSE)
-Credit.tr <- Credit[index.tr,]
-Credit.te <- Credit[-index.tr,]
-```
-
-
-```{r}
-table(Credit.tr$RESPONSE)
-```
-
-```{r}
-No.good <- max(table(Credit.tr$RESPONSE))
-Credit.tr.bad <- filter(Credit.tr, RESPONSE=="0")
-Credit.tr.good <- filter(Credit.tr, RESPONSE=="1")
-
-index.bad <- sample(size=No.good, x=1:nrow(Credit.tr.bad), replace=TRUE)
-Credit.tr.res <- data.frame(rbind(Credit.tr.good, Credit.tr.bad[index.bad,]))
-table(Credit.tr.res$RESPONSE)
-```
-
-## 3.2 Cross validation  
-```{r}
-trctrl <- trainControl(method = "cv",number = 10)
-Credit.cv <- train(RESPONSE ~., data = Credit.tr.res, method = "rpart",
-                    trControl=trctrl)
-Credit.cv
-```
-
-```{r}
-Credit.pred <- predict(Credit.cv,newdata=Credit.te)
-confusionMatrix(data=Credit.pred, reference = Credit.te$RESPONSE)
-```
-
-
-
