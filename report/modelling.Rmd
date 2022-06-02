@@ -1,26 +1,54 @@
-# 4. Modelling  
+# 3 Data preparation for models
 
 ```{r, echo = FALSE, message = FALSE}
 source(here::here("scripts/setup.R"))
 ```
-## 4.1 CART  
+
+## 3.1 Train set and test set
 
 ```{r}
-set.seed(1234)
-Credit.tree <- rpart(RESPONSE ~ ., data=Credit.tr.res[-1])
-rpart.plot(Credit.tree)
+set.seed(123)
+index.tr <- createDataPartition(y=Credit$RESPONSE,p=0.8,list=FALSE)
+Credit.tr <- Credit[index.tr,]
+Credit.te <- Credit[-index.tr,]
 ```
+
 
 ```{r}
-plotcp(Credit.tree)
+table(Credit.tr$RESPONSE)
 ```
+
+# 4. supervised learning 
+
+## 4.1 classification tree
+```{r}
+credit.tree <- caret::train(RESPONSE ~ .,
+                           data = Credit.tr,
+                           method ="rpart",
+                           preProcess = NULL,
+                           trControl=trainControl(method="repeatedcv", number=10,
+                                                  repeats=10, verboseIter=FALSE,
+                                                  sampling="up"))
+
+rpart.plot(credit.tree$finalModel)
+credit.tree
+```
+
 
 ```{r}
-pred <- predict(Credit.tree,newdata = Credit.te,type = "class")
-table(Pred=pred,obs=Credit.te$RESPONSE)
+Credit.pred <- predict(credit.tree,newdata=Credit.te)
+confusionMatrix(data=Credit.pred, reference = Credit.te$RESPONSE)
+# draw a confusion matrix plot later
 ```
 
-## Clustering  
+##4.2 logistic regression
+```{r}
+
+```
+
+
+# 5. unsupervised learing
+## 5.1 Clustering  
 
 ```{r}
 credit.d <- dist(Credit.copy[,-32], method = "manhattan")
