@@ -8,7 +8,7 @@ packages <- c(
   "tidyverse", "lubridate", "DT", "DataExplorer", "GGally", "summarytools",
   "corrplot", "reshape2", "factoextra", "summarytools",# for wrangling
   "ggrepel", "gghighlight", "patchwork", "scales","rpart","rpart.plot",
-  "caret",# for plotting
+  "caret","ggmosaic",# for plotting
   "knitr", "kableExtra", "bookdown", "rmarkdown" # for the report
   )
 purrr::walk(packages, library, character.only = TRUE)

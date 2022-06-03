@@ -41,71 +41,141 @@ confusionMatrix(data=Credit.pred, reference = Credit.te$RESPONSE)
 # draw a confusion matrix plot later
 ```
 
-##4.2 logistic regression
-```{r}
-
-```
-
-
-# 5. unsupervised learing
-## 5.1 Clustering  
+## 4.2 logistic regression
+- unbalanced data    
 
 ```{r}
-credit.d <- dist(Credit.copy[,-32], method = "manhattan")
-
-# credit.d.melt <- melt(as.matrix(credit.d)) 
-# head(credit.d.melt)
-# 
-# ggplot(data = credit.d.melt, aes(x=Var1, y=Var2, fill=value)) + 
-#   geom_tile()
-
-credit.hc <- hclust(credit.d, method = "complete")
-plot(credit.hc, hang=-1)
-
-plot(credit.hc, hang=-1)
-rect.hclust(credit.hc, k=6)
-# credit.clust <- cutree(credit.hc, k=6)
-# credit.clust
+logr.bf <- glm(RESPONSE~., data=Credit.tr[2:32], family="binomial")
+summary(logr.bf)
 ```
 
 ```{r}
-# Choice of the number of clusters
-# fviz_nbclust(data[,-32],
+
+logr.prob<- predict(logr.bf,newdata=Credit.te)
+logr.pred <- ifelse(logr.prob >= 0.5, 1, 0) %>% as.factor()
+confusionMatrix(data=logr.pred, reference = Credit.te$RESPONSE)
+
+```
+
+```{r balancing data}
+set.seed(123)
+n.yes <- min(table(Credit.tr$RESPONSE)) 
+
+Credit.tr.no <- filter(Credit.tr, RESPONSE== "0") ## the "No" cases
+Credit.tr.yes <- filter(Credit.tr, RESPONSE== "1") ## The "Yes" cases
+
+index.yes <- sample(size=n.yes, x=1:nrow(Credit.tr.yes), replace=FALSE) 
+
+Credit.tr.subs <- data.frame(rbind(Credit.tr.no, Credit.tr.yes[index.yes,])) 
+table(Credit.tr.subs$RESPONSE) 
+```
+
+- balanced data with cross-validation
+```{r}
+set.seed(123)
+logr.af <- caret::train(
+  RESPONSE~.,
+  data = Credit.tr.subs[,-1],
+  method="glm",
+  family="binomial",
+  trControl=trainControl(method = "cv",
+                         number = 10), 
+  trace=0)
+logr.af
+```
+
+```{r}
+logr.pred2<- predict(logr.af,newdata=Credit.te)
+confusionMatrix(data=logr.pred2, reference = Credit.te$RESPONSE)
+```
+
+
+# 5. Unsupervised learning    
+
+## Clustering   
+
+#### **Hierarchical clustering**
+
+**Distance**
+```{r, echo = FALSE, message = FALSE, warning=FALSE}
+hierarchical.d <- dist(Credit.tr[,-32], method = "euclidean") 
+
+hierarchical.melt <- melt(as.matrix(hierarchical.d))
+
+kable(hierarchical.melt[1:50,], caption = "Example of the Euclidean distance between instances") %>%
+  kable_styling(bootstrap_options = "bordered") %>%
+  kableExtra::scroll_box(width = "100%", height = "250px")
+```
+
+**Dendrogram**   
+
+```{r, echo = FALSE, message = FALSE, warning=FALSE, fig.height=4, fig.width=6}
+hierarchical.cluster <- hclust(hierarchical.d, method = "complete")
+plot(hierarchical.cluster, hang=-1)
+```
+
+**Choice of the number of clusters**
+
+```{r, echo = FALSE, message = FALSE, warning=FALSE, fig.height=6, fig.width=8}
+c.p1 <- fviz_nbclust(Credit.tr[,c(-1,-32)],
+             hcut, hc_method="complete",
+             hc_metric="euclidean",
+             method = "wss", 
+             k.max = 25, verbose = FALSE)
+
+c.p2 <- fviz_nbclust(Credit.tr[,c(-1,-32)],
+             hcut, hc_method="complete",
+             hc_metric="euclidean",
+             method = "silhouette", 
+             k.max = 25, verbose = FALSE)
+
+# c.p3 <-fviz_nbclust(Credit.tr,
 #              hcut, hc_method="complete",
-#              hc_metric="manhattan",
-#              method = "wss", 
-#              k.max = 25, verbose = FALSE)
-# fviz_nbclust(data[,-32],
-#              hcut, hc_method="complete",
-#              hc_metric="manhattan",
-#              method = "silhouette", 
-#              k.max = 25, verbose = FALSE)
-# fviz_nbclust(data[,-32],
-#              hcut, hc_method="complete",
-#              hc_metric="manhattan",
+#              hc_metric="euclidean",
 #              method = "gap", 
 #              k.max = 25, verbose = FALSE)
+c.p1 / c.p2 
 ```
 
-```{r}
-#K-means
-# 
-# fviz_nbclust(data[,-32],
-#              kmeans,
-#              method = "wss", 
-#              k.max = 25, verbose = FALSE)
-# fviz_nbclust(data[,-32],
-#              kmeans, 
-#              method = "silhouette", 
-#              k.max = 25, verbose = FALSE)
-# fviz_nbclust(data[,-32],
-#              kmeans,
-#              method = "gap", 
-#              k.max = 25, verbose = FALSE)
+```{r, echo = FALSE, message = FALSE, warning=FALSE, fig.height=4, fig.width=6}
+plot(hierarchical.cluster, hang=-1)
+rect.hclust(hierarchical.cluster, k=2)
+```
 
-# credit.km <- kmeans(data[,-32], centers=2)
-# credit.km$cluster
+```{r, echo = FALSE, message = FALSE, warning=FALSE}
+clust.h <- cutree(hierarchical.cluster, k=2)
+clust.comp <- data.frame(Credit.tr[,c(-1,-32)], 
+                              Clust=factor(clust.h),
+                              Id=row.names(Credit.tr[,c(-1,-32)]))
 
-#PAM method
+cluster.df <- melt(clust.comp, id=c("Id", "Clust"))
+```
+
+**Interpretation of the clusters**
+
+```{r, fig.height=20, fig.width=20, echo = FALSE, message = FALSE, warning=FALSE}
+ggplot(cluster.df, aes(y=value, group=Clust, fill=Clust)) +
+  geom_boxplot() +
+  facet_wrap(~variable, scale='free')+
+  theme(legend.text=element_text(size=rel(4)),
+        strip.text=element_text(size=17),
+        axis.text =element_text(size=17))
+```
+
+#### **Partitioning methods**    
+
+**Partitioning Around the Medoid (PAM)**   
+
+```{r, out.width="50%", echo = FALSE, message = FALSE, warning=FALSE, fig.height=4, fig.width=6}
+fviz_nbclust(Credit.tr[,c(-1,-32)],
+             cluster::pam,
+             method = "silhouette", 
+             k.max = 25, verbose = FALSE)
+```
+
+```{r, echo = FALSE, message = FALSE, warning=FALSE, fig.height=4, fig.width=6}
+pam <- cluster::pam(Credit.tr[,c(-1,-32)], k=2)
+plot(cluster::silhouette(pam), border = NA, col = 1:2)
 
 ```
+

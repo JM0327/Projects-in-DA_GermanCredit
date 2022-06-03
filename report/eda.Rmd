@@ -4,9 +4,9 @@
 source(here::here("scripts/setup.R"))
 ```
 
-## 2.1 Data structure and summary  
+## 2.1 Data structure and summary   
 
-### 2.1.1 Prepare the data
+### 2.1.1 Prepare the data    
 ```{r}
 Credit <- read.csv(here::here("data/GermanCredit.csv"), sep=";", header=T)
 # Credit.copy <- Credit #one for plot, one for calculation
@@ -22,7 +22,7 @@ Credit %>% datatable(rownames = FALSE,
 
 ```
 
-###2.1.2 Structure of data
+### 2.1.2 Structure of data
 ```{r}
 str(Credit)
 summary(Credit)
@@ -37,23 +37,25 @@ print(dfSummary(Credit,style="grid",
       method = "render")
 ```
 
-###2.1.3 Mistakes found in the data
-After checking the structure, we find some mistakes about the data and we correct these data.
-1.Education:according to the data description, this variable is a binary type. 0 means the applicant has no education and 1 means the applicant has education. But we notice this variable has three categories. We need to change the category -1 to 1.
+### 2.1.3 Mistakes found in the data    
+After checking the structure, we find some mistakes about the data and we correct these data.     
+1.Education:according to the data description, this variable is a binary type. 0 means the applicant has no education and 1 means the applicant has education. But we notice this variable has three categories. We need to change the category -1 to 1.    
 ```{r}
 table(Credit$EDUCATION)
 Credit <- Credit %>% 
   mutate(EDUCATION=ifelse(EDUCATION %in% c("-1","1") , "1", "0"))
 table(Credit$EDUCATION)
 ```
-2.Guarantor:according to the data description, this variable is a binary type. 0 means the applicant has no guarantor and 1 means the applicant has guarantor. But we notice this variable has three categories. We need to change the category 2 to 1.
+
+2.Guarantor:according to the data description, this variable is a binary type. 0 means the applicant has no guarantor and 1 means the applicant has guarantor. But we notice this variable has three categories. We need to change the category 2 to 1.    
 ```{r}
 table(Credit$GUARANTOR)
 Credit <- Credit %>% 
   mutate(GUARANTOR=ifelse(GUARANTOR %in% c("2","1") , "1", "0"))
 table(Credit$GUARANTOR)
 ```
-3.PRESENT_RESIDENT:according to the data description, this variable has these 4 categories:0, 1, 2, 3. We need to change category 1 to category 0, change category 2 to category 1, change category 3 to category 2 and change category 4 to category 3.
+
+3.PRESENT_RESIDENT:according to the data description, this variable has these 4 categories:0, 1, 2, 3. We need to change category 1 to category 0, change category 2 to category 1, change category 3 to category 2 and change category 4 to category 3.    
 ```{r}
 table(Credit$PRESENT_RESIDENT)
 levels(Credit$PRESENT_RESIDENT)[1] <- 0
@@ -71,17 +73,19 @@ summary(Credit$AGE)
 ```
 
 
-## 2.2 Graphs for variables  
+## 2.2 Graphs for variables    
 
-### 2.2.1 Graph for response 
-We find the data set is unbalanced.
+### 2.2.1 Graph for response    
+Here, we could see the comparison between the number of good credit and not good credit among the observations.Besides, it is obvious that this data set has unbalanced structure.      
 
 ```{r}
 p1 <- Credit %>% ggplot(mapping = aes(x=RESPONSE,fill=RESPONSE))+geom_bar()
 p1
 ```
 
-### 2.2.2 Graphs for numeric variables  
+### 2.2.2 Graphs for numeric variables    
+Then, we use the different graphs to see the distribution of each variables.    
+
 ```{r}
 #Continuous Variables
 Credit %>% select(-INSTALL_RATE,-NUM_CREDITS,-NUM_DEPENDENTS) %>% 
@@ -109,7 +113,7 @@ Credit %>% select(-AGE,-AMOUNT,-DURATION) %>%
 ```
 
 
-### 2.2.3 Graphs for the purpose of credit variables  
+### 2.2.3 Graphs for the purpose of credit variables    
 
 ```{r}
 a <- unlist(Credit$NEW_CAR) 
@@ -135,7 +139,7 @@ p2 <- ggplot(REASON_DATA,aes(x=reorder(reason,number),y=number,fill=reason))+geo
 p2
 ```
 
-### 2.2.4 Graphs for other categorical variables  
+### 2.2.4 Graphs for other categorical variables      
 ```{r}
 Credit %>% select(-5,-6,-7,-8,-9,-10) %>% 
   keep(is.factor) %>% 
@@ -149,24 +153,31 @@ Credit %>% select(-5,-6,-7,-8,-9,-10) %>%
 Credit %>% select(12,13,28,32) %>% ggpairs()
 ```
 
-### 2.2.5 Observation profiling       
-In this part, we would like to draw the profilling of observations ditinguished by different response. Thereby, it is possible to observe the performance / situation of observations subjects with good credit in each variable through the portrait.    
+### 2.2.5 Observation profiling          
+In this part, we would like to draw the profilling of observations distinguished by different response. Thereby, it is possible to observe the performance / situation of observations subjects with good credit in each variable through the portrait.    
 ```{r}
-Credit.copy[2:32] %>% 
-  plot_boxplot(by='RESPONSE', ncol = 5)
+cat_colnames <- Credit %>% select(-1, -3,-11,-14,-23,-27,-29, -32) %>% colnames()
+
+plot_list=list()
+for (i in cat_colnames){
+  print(ggplot(data = Credit) +
+  geom_mosaic(aes(x = product(i, RESPONSE), fill=RESPONSE)))
+}
+
+
+
+ggplot(data = Credit) +
+  geom_mosaic(aes(x = product(CHK_ACCT, RESPONSE), fill=RESPONSE))
+
+
 ```
 <font color=red>
 At the beginning, we want to use boxplot as above, but it is not suitable for binary variables
 </font>
 
-### 2.2.6 Correlation plot        
-```{r, out.width= "150%", fig.width=100, fig.height=100}
+### 2.2.6 Correlation plot          
+```{r}
 
-corrplot(cor(Credit.copy[2:32]), 
-          method = "color",
-          addCoef.col="black",
-          number.digits = 2,
-          number.cex = 4,
-          tl.cex=4, 
-          tl.col="black")
+plot_correlation(Credit, type= 'c', cor_args = list( 'use' = 'complete.obs')) #only show numerical value
+
 ```
