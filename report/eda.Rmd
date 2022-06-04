@@ -156,18 +156,17 @@ Credit %>% select(12,13,28,32) %>% ggpairs()
 ### 2.2.5 Observation profiling          
 In this part, we would like to draw the profilling of observations distinguished by different response. Thereby, it is possible to observe the performance / situation of observations subjects with good credit in each variable through the portrait.    
 ```{r}
-cat_colnames <- Credit %>% select(-1, -3,-11,-14,-23,-27,-29, -32) %>% colnames()
+cat_table <- Credit %>% select(-1, -3,-11,-14,-23,-27,-29) 
 
 plot_list=list()
-for (i in cat_colnames){
-  print(ggplot(data = Credit) +
-  geom_mosaic(aes(x = product(i, RESPONSE), fill=RESPONSE)))
+for (i in 1:24){
+  print(mosaicplot(~cat_table[,i]+cat_table[,25], 
+                   main = "Mosaic Plot between Response and each variable",
+                   color = TRUE, 
+                   ylab=paste0("variable_", colnames(cat_table)[i])))
+  Sys.sleep(2)
 }
 
-
-
-ggplot(data = Credit) +
-  geom_mosaic(aes(x = product(CHK_ACCT, RESPONSE), fill=RESPONSE))
 
 
 ```
